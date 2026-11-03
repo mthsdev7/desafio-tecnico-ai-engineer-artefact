@@ -1,5 +1,7 @@
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 
 texto = """
 EMPÓRIO DA MÚSICA 
@@ -249,4 +251,13 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 chunks = text_splitter.split_documents(document)
 
-print(chunks[0].page_content)
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
+
+db = Chroma(
+    embedding_function=embeddings,
+    collection_name="loja",
+    persist_directory="db",
+)
+
