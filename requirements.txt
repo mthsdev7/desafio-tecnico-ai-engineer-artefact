@@ -1,0 +1,9 @@
+langchain-core
+langchain-text-splitters
+langchain-chroma
+langchain-huggingface
+sentence-transformers
+langchain-groq
+python-dotenv
+pypdf
+langchain>=1.0,<2.0
