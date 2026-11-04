@@ -1,5 +1,6 @@
 
 import os
+import re
 from pathlib import Path
 from pypdf import PdfReader
 
@@ -27,7 +28,7 @@ for arquivo in sorted(base.glob("*.pdf")):
     leitor = PdfReader(str(arquivo))
 
     for numero_pagina, pagina in enumerate(leitor.pages, start=1):
-        texto = pagina.extract_text() or ""
+        texto = re.sub(r"\s+", " ", pagina.extract_text() or "").strip()
 
         if texto.strip():
             documents.append(
@@ -54,17 +55,18 @@ embeddings = HuggingFaceEmbeddings(
 
 db = Chroma(
     embedding_function=embeddings,
-    collection_name="loja",
+    collection_name="loja_pdf_v2",
     persist_directory="db",
     collection_metadata={"hnsw:space": "cosine"},
 )
+
+for source in {chunk.metadata["source"] for chunk in chunks}:
+    db.delete(where={"source": source})
 
 db.add_documents(
     documents=chunks,
     ids=[f"emporio-{index}" for index in range(len(chunks))]
 )
-
-pergunta = "Vocês enviam pelo sedex?"
 
 SYSTEM_PROMPT = """
 Você é Manu, atendente virtual da empresa. Atenda os clientes em português
@@ -97,20 +99,26 @@ llm = ChatGroq(
 
 chain = template | llm | StrOutputParser()
 
-resultados = db.similarity_search(pergunta, k=7)
+def fazerPergunta(user_query: str) -> str:
+    resultados = db.similarity_search(user_query, k=7)
+    contexto = [
+        (
+            f"[Arquivo: {documento.metadata.get('source', 'desconhecido')}; "
+            f"página: {documento.metadata.get('page', 'desconhecida')}]\n"
+            f"{documento.page_content}"
+        )
+        for documento in resultados
+    ]
 
-contexto = [
-    (
-        f"[Arquivo: {documento.metadata.get('source', 'desconhecido')}; "
-        f"página: {documento.metadata.get('page', 'desconhecida')}]\n"
-        f"{documento.page_content}"
-    )
-    for documento in resultados
-]
-
-resposta = chain.invoke({
-    "pergunta": pergunta,
-    "contexto": "\n\n".join(contexto),
+    return chain.invoke({
+        "pergunta": user_query,
+        "contexto": "\n\n".join(contexto),
     })
 
-print(resposta)
+print("\nAgente pronto. Digite 'sair' para encerrar.")
+while True:
+    question = input("\nVocê: ").strip()
+    if question.lower() in {"sair", "exit", "quit"}:
+        break
+    if question:
+        print("Manu:", fazerPergunta(question))
