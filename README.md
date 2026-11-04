@@ -124,14 +124,113 @@ projeto. Fiz essa escolha para avançar na implementação sem gastar tempo
 excessivo bloqueado nesses pontos; revisei e validei as alterações com testes
 práticos, como a consulta sobre envio por Sedex.
 
-## Executar
+## Instalação e execução no Windows
 
-Instale as dependências listadas em `requirements.txt`, configure `GROQ_API_KEY`
-em um arquivo `.env` na pasta do projeto e execute:
+### Pré-requisitos
+
+- Windows e Python 3.12 instalado. Essa é a versão usada para validar o projeto.
+- Conexão com a internet na primeira instalação e execução: o `pip` baixa as
+  dependências e o Sentence Transformers baixa os pesos do modelo de embeddings.
+- Uma chave de API Groq válida. O código atual usa Groq para gerar as respostas;
+  Ollama local ainda não está integrado.
+
+Confira a instalação do Python no PowerShell:
 
 ```powershell
-py rag.py
+py --version
 ```
+
+### Criar o ambiente e instalar as dependências
+
+Abra o PowerShell na pasta do projeto. Se necessário, navegue até ela:
+
+```powershell
+cd "C:\Users\Matheus Neves\Desktop\ai engineer"
+```
+
+Crie um ambiente virtual e instale as dependências:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+O arquivo `requirements.txt` inclui LangChain, Chroma, Sentence Transformers,
+PyPDF e a integração com Groq, entre outras dependências usadas pelo agente.
+Use o Python do ambiente virtual nos comandos seguintes para garantir que essas
+dependências estejam disponíveis.
+
+### Configurar a chave Groq
+
+Na raiz do projeto, crie um arquivo chamado `.env` e coloque nele sua chave:
+
+```text
+GROQ_API_KEY=sua_chave_groq
+```
+
+Substitua `sua_chave_groq` pela chave obtida na sua conta Groq. Não coloque
+aspas ao redor do valor e não compartilhe nem versione esse arquivo. O `.env`
+já está listado no `.gitignore`.
+
+### Conferir os dados de entrada
+
+Coloque os arquivos de dados na pasta `data/`:
+
+- Arquivos `.csv` com cabeçalho na primeira linha. Os seis arquivos fornecidos
+  são `categories`, `customers`, `order_items`, `orders`, `products` e
+  `promotions`.
+- Os arquivos `.pdf` com políticas que o agente deve consultar.
+
+Não é preciso converter os CSVs manualmente. Ao iniciar, o programa recria
+`data/loja.sqlite3` a partir de todos os arquivos `.csv` existentes em `data/`.
+Esse banco é gerado automaticamente e está ignorado pelo Git; os CSVs são a
+fonte dos dados. A ferramenta consulta SQL em modo somente leitura.
+
+Na inicialização, o agente também extrai texto dos PDFs em `data/`, divide o
+conteúdo em trechos e atualiza os embeddings da coleção Chroma no diretório
+`db/`. PDFs escaneados como imagem, sem camada de texto, não são lidos por esta
+extração.
+
+### Iniciar o agente
+
+Execute o comando a partir da raiz do projeto:
+
+```powershell
+.\.venv\Scripts\python.exe rag.py
+```
+
+Na primeira execução, aguarde o download dos pesos do modelo de embeddings.
+Quando aparecer `Agente pronto`, digite uma pergunta e pressione Enter. Exemplos:
+
+```text
+Quais opções de violões disponíveis custando até R$ 1.000?
+Vocês enviam por Sedex?
+Qual é o prazo para trocar um instrumento com defeito?
+```
+
+Para encerrar, digite `sair`.
+
+### Atualizar os dados
+
+Edite ou substitua os CSVs e PDFs em `data/` e reinicie `rag.py`. O banco
+SQLite e os trechos dos PDFs são atualizados na inicialização; não é necessário
+executar uma etapa separada de ingestão. Execute sempre a partir da raiz do
+projeto, pois o diretório `db/` do Chroma é relativo à pasta atual.
+
+### Problemas comuns
+
+- **`GROQ_API_KEY não encontrada`:** confira se o arquivo se chama exatamente
+  `.env`, está na raiz do projeto e contém `GROQ_API_KEY=...`.
+- **Erro de autenticação ou limite da API:** valide a chave, o acesso ao modelo
+  configurado e os limites da sua conta Groq.
+- **`No module named ...`:** instale as dependências no ambiente virtual e
+  execute o projeto com `.\.venv\Scripts\python.exe rag.py`.
+- **O agente não encontra um produto ou promoção:** confira os dados e os
+  cabeçalhos do CSV em `data/`; o catálogo depende dos valores existentes nos
+  arquivos.
+- **Um PDF não aparece nas respostas:** confirme que ele está dentro de `data/`
+  e que contém texto selecionável, não apenas páginas escaneadas.
 
 ## Limitações atuais
 
