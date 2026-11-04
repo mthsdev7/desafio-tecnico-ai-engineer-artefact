@@ -124,6 +124,31 @@ projeto. Fiz essa escolha para avançar na implementação sem gastar tempo
 excessivo bloqueado nesses pontos; revisei e validei as alterações com testes
 práticos, como a consulta sobre envio por Sedex.
 
+## Possíveis caminhos para uma solução real
+
+Este repositório é um protótipo executado no terminal. Em um cenário real, o
+mesmo agente poderia ser disponibilizado de duas formas principais:
+
+- **Chatbot no site:** uma interface de conversa fixa na lateral da página,
+  conectada a uma API de backend que encaminha as perguntas ao agente e retorna
+  as respostas.
+- **Automação no WhatsApp:** integração com a WhatsApp Business Platform
+  (WABA) Cloud API oficial da Meta. Essa é a alternativa que utilizo na prática.
+  O backend receberia as mensagens pelos webhooks da Meta, chamaria o agente e
+  enviaria a resposta pela API oficial. APIs não oficiais também existem, mas
+  para uma solução de produção eu priorizaria a integração oficial.
+
+Para a aplicação web, o frontend poderia ser desenvolvido com **Vite** ou
+**Next.js**. O backend poderia reutilizar Python para executar o agente, ou ser
+implementado em **TypeScript com NestJS**. Para uma solução mais enxuta, também
+seria possível usar **Node.js com Express**. A escolha dependeria das
+necessidades de integração, equipe, infraestrutura e manutenção do projeto.
+
+Em qualquer dessas opções, o script atual precisaria evoluir para uma aplicação
+servidora: expor endpoints ou webhooks, gerenciar sessões de conversa, validar
+requisições, proteger credenciais e tratar erros, limites e disponibilidade dos
+serviços externos.
+
 ## Instalação e execução no Windows
 
 ### Pré-requisitos
